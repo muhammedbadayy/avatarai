@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B0F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>AvatarAI</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --bg:#0B0B0F; --surface:#15151D; --surface-2:#1E1E29;
+    --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.16);
+    --text:#F4F2FB; --muted:#9B98AD; --hint:#6C6980;
+    --accent:#7C5CFC; --accent-soft:rgba(124,92,252,.16);
+    --gold:#FFC24B; --gold-soft:rgba(255,194,75,.14);
+    --green:#43D6A0; --radius:18px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--font);
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+  /* Header */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 20px 14px;
+  }
+  .brand{display:flex;align-items:center;gap:9px;font-size:19px;font-weight:600;letter-spacing:-.02em}
+  .brand .logo{
+    width:30px;height:30px;border-radius:9px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:16px;
+  }
+  .credits{
+    display:flex;align-items:center;gap:6px;background:var(--gold-soft);
+    color:var(--gold);font-size:14px;font-weight:600;padding:7px 13px;border-radius:999px;
+  }
+  .credits .dot{font-size:15px}
+
+  /* Scroll body */
+  main{flex:1;padding:6px 20px 24px;overflow-y:auto}
+
+  .h-title{font-size:26px;font-weight:600;letter-spacing:-.03em;line-height:1.15;margin-bottom:6px}
+  .h-sub{font-size:15px;color:var(--muted);line-height:1.5;margin-bottom:22px}
+
+  .label{font-size:13px;color:var(--hint);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px}
+
+  /* Upload */
+  .upload{
+    border:1.5px dashed var(--line-2);border-radius:var(--radius);
+    padding:30px 18px;text-align:center;cursor:pointer;transition:.2s;
+    background:var(--surface);margin-bottom:26px;
+  }
+  .upload:active{transform:scale(.99)}
+  .upload .ic{font-size:34px;display:block;margin-bottom:8px}
+  .upload p{font-size:14px;color:var(--muted)}
+  .upload.done{border-style:solid;border-color:var(--green);background:rgba(67,214,160,.08)}
+  .upload.done .ic,.upload.done p{color:var(--green)}
+
+  /* Styles grid */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:26px}
+  .style{
+    position:relative;border:1.5px solid var(--line);border-radius:var(--radius);
+    padding:16px;background:var(--surface);cursor:pointer;transition:.18s;overflow:hidden;
+  }
+  .style:active{transform:scale(.98)}
+  .style .emoji{font-size:26px;display:block;margin-bottom:10px}
+  .style .name{font-size:15px;font-weight:600;letter-spacing:-.01em}
+  .style .tag{font-size:12px;color:var(--hint);margin-top:2px}
+  .style.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .style .badge{
+    position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;
+    background:var(--gold);color:#1a1300;padding:2px 7px;border-radius:999px;letter-spacing:.03em;
+  }
+
+  /* Generate button */
+  .gen{
+    width:100%;padding:17px;border:none;border-radius:var(--radius);
+    background:var(--accent);color:#fff;font-size:16px;font-weight:600;
+    font-family:var(--font);cursor:pointer;transition:.18s;letter-spacing:-.01em;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .gen:active{transform:scale(.99)}
+  .gen:disabled{opacity:.5}
+
+  /* Earn credits row */
+  .earn{display:flex;gap:12px;margin-top:14px}
+  .earn button{
+    flex:1;padding:13px 8px;border:1.5px solid var(--line);border-radius:14px;
+    background:var(--surface);color:var(--text);font-family:var(--font);
+    font-size:13px;font-weight:600;cursor:pointer;transition:.18s;
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+  }
+  .earn button:active{transform:scale(.97);background:var(--surface-2)}
+  .earn button .ei{font-size:18px}
+  .earn button small{font-size:11px;color:var(--gold);font-weight:700}
+
+  /* Result */
+  .result{
+    margin-top:24px;border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--surface);overflow:hidden;display:none;animation:rise .35s ease;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .result .preview{
+    height:200px;background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;position:relative;
+  }
+  .result .preview .ph{font-size:56px;opacity:.5}
+  .result .preview .stylechip{
+    position:absolute;bottom:12px;left:12px;font-size:12px;font-weight:600;
+    background:rgba(0,0,0,.55);padding:5px 11px;border-radius:999px;backdrop-filter:blur(8px);
+  }
+  .result .body{padding:16px 18px}
+  .result .body .lead{font-size:13px;color:var(--hint);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+  .result .body p{font-size:15px;line-height:1.6;color:var(--text)}
+  .result .actions{display:flex;gap:10px;padding:0 18px 18px}
+  .result .actions button{
+    flex:1;padding:12px;border:1.5px solid var(--line);border-radius:12px;
+    background:transparent;color:var(--text);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .result .actions button:active{background:var(--surface-2)}
+
+  .loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px;color:var(--muted);font-size:14px}
+  .spinner{width:18px;height:18px;border:2px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+    display:none;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .overlay.show{display:flex;animation:fade .2s}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .sheet{
+    width:100%;max-width:480px;background:var(--surface);
+    border-radius:24px 24px 0 0;padding:24px 22px calc(24px + env(safe-area-inset-bottom));
+    animation:slideup .3s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
+  .sheet h3{font-size:21px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+  .sheet .sub{font-size:14px;color:var(--muted);margin-bottom:20px}
+  .pack{
+    display:flex;align-items:center;justify-content:space-between;
+    border:1.5px solid var(--line);border-radius:14px;padding:15px 16px;margin-bottom:11px;cursor:pointer;transition:.15s;
+  }
+  .pack:active{background:var(--surface-2)}
+  .pack.best{border-color:var(--accent);background:var(--accent-soft)}
+  .pack .pl{display:flex;flex-direction:column;gap:2px}
+  .pack .pl .amt{font-size:16px;font-weight:600}
+  .pack .pl .per{font-size:12px;color:var(--hint)}
+  .pack .price{font-size:16px;font-weight:700;color:var(--accent)}
+  .pack .price.gold{color:var(--gold)}
+  .closebtn{width:100%;padding:14px;margin-top:8px;border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer}
+
+  .toast{
+    position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2);border:1px solid var(--line-2);color:var(--text);
+    padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;
+    opacity:0;transition:.3s;z-index:60;pointer-events:none;white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><span class="logo">✦</span> AvatarAI</div>
+    <div class="credits" id="creditsPill"><span class="dot">🪙</span><span id="credits">10</span> kredi</div>
+  </header>
+
+  <main>
+    <h1 class="h-title">Yeni bir sen yarat</h1>
+    <p class="h-sub">Fotoğrafını yükle, stilini seç, saniyeler içinde avatarın hazır.</p>
+
+    <p class="label">1 · Fotoğrafını yükle</p>
+    <input type="file" id="fileInput" accept="image/*" hidden>
+    <div class="upload" id="upload">
+      <span class="ic" id="upIc">📸</span>
+      <p id="upText">Selfie eklemek için dokun</p>
+    </div>
+
+    <p class="label">2 · Stil seç</p>
+    <div class="grid" id="styleGrid">
+      <div class="style" data-style="profesyonel">
+        <span class="emoji">💼</span><div class="name">Profesyonel</div><div class="tag">İş & CV</div>
+      </div>
+      <div class="style" data-style="anime">
+        <span class="emoji">🌸</span><div class="name">Anime</div><div class="tag">Manga stili</div>
+      </div>
+      <div class="style" data-style="fantastik">
+        <span class="emoji">⚔️</span><div class="name">Fantastik</div><div class="tag">Epik kahraman</div>
+      </div>
+      <div class="style" data-style="siber-punk">
+        <span class="badge">YENİ</span>
+        <span class="emoji">⚡</span><div class="name">Siber-punk</div><div class="tag">Neon gelecek</div>
+      </div>
+    </div>
+
+    <button class="gen" id="genBtn">✨ Avatar üret · 1 kredi</button>
+
+    <div class="earn">
+      <button id="watchAd"><span class="ei">▶️</span>Reklam izle<small>+2 kredi</small></button>
+      <button id="invite"><span class="ei">🎁</span>Arkadaş davet et<small>+5 kredi</small></button>
+    </div>
+
+    <div class="result" id="result">
+      <div class="preview">
+        <span class="ph" id="resPh">🖼️</span>
+        <span class="stylechip" id="resChip">Profesyonel</span>
+      </div>
+      <div class="body">
+        <div class="lead">Avatar konsepti</div>
+        <p id="resText"></p>
+      </div>
+      <div class="actions">
+        <button id="saveBtn">💾 Kaydet</button>
+        <button id="shareBtn">📤 Paylaş</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Paywall sheet -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h3 id="sheetTitle">Kredi paketleri</h3>
+    <p class="sub" id="sheetSub">Daha fazla avatar üretmek için kredi al. Tek seferlik, abonelik yok.</p>
+    <div class="pack best" data-add="12" data-price="₺29,99">
+      <div class="pl"><span class="amt">12 kredi</span><span class="per">en popüler · avatar başı ₺2,5</span></div>
+      <span class="price">₺29,99</span>
+    </div>
+    <div class="pack" data-add="30" data-price="₺59,99">
+      <div class="pl"><span class="amt">30 kredi</span><span class="per">avatar başı ₺2,0</span></div>
+      <span class="price">₺59,99</span>
+    </div>
+    <div class="pack" data-add="5" data-price="₺14,99">
+      <div class="pl"><span class="amt">5 kredi</span><span class="per">deneme paketi</span></div>
+      <span class="price">₺14,99</span>
+    </div>
+    <button class="closebtn" id="closeSheet">Şimdi değil</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var credits = 10, selectedStyle = null, selectedName = null, uploaded = false, busy = false;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var creditsEl = $('credits');
+
+  function setCredits(n){ credits = Math.max(0, n); creditsEl.textContent = credits; }
+  function toast(msg){
+    var t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._tm); t._tm = setTimeout(function(){ t.classList.remove('show'); }, 1900);
+  }
+
+  /* Upload */
+  $('upload').addEventListener('click', function(){ $('fileInput').click(); });
+  $('fileInput').addEventListener('change', function(e){
+    if(e.target.files && e.target.files[0]){
+      uploaded = true;
+      $('upload').classList.add('done');
+      $('upIc').textContent = '✅';
+      $('upText').textContent = e.target.files[0].name.slice(0,24) + ' yüklendi';
+    }
+  });
+
+  /* Style selection */
+  document.querySelectorAll('.style').forEach(function(el){
+    el.addEventListener('click', function(){
+      document.querySelectorAll('.style').forEach(function(x){ x.classList.remove('sel'); });
+      el.classList.add('sel');
+      selectedStyle = el.getAttribute('data-style');
+      selectedName = el.querySelector('.name').textContent;
+    });
+  });
+
+  /* Earn credits */
+  $('watchAd').addEventListener('click', function(){
+    // INTEGRATION POINT: AdMob ödüllü reklam SDK'sı buraya bağlanır.
+    toast('Reklam izlendi · +2 kredi');
+    setCredits(credits + 2);
+  });
+  $('invite').addEventListener('click', function(){
+    // INTEGRATION POINT: davet linki paylaşımı (native share / referral sistemi).
+    var link = 'https://avatarai.app/davet/SENINKODUN';
+    if(navigator.share){
+      navigator.share({ title:'AvatarAI', text:'Bu uygulamayla AI avatarı yap! Davetimle 5 bedava kredi:', url:link })
+        .then(function(){ toast('Davet gönderildi · +5 kredi'); setCredits(credits+5); })
+        .catch(function(){});
+    } else {
+      toast('Davet linki kopyalandı · +5 kredi');
+      setCredits(credits + 5);
+    }
+  });
+
+  /* Paywall */
+  function openSheet(){ $('overlay').classList.add('show'); }
+  function closeSheet(){ $('overlay').classList.remove('show'); }
+  $('closeSheet').addEventListener('click', closeSheet);
+  $('overlay').addEventListener('click', function(e){ if(e.target === $('overlay')) closeSheet(); });
+  document.querySelectorAll('.pack').forEach(function(p){
+    p.addEventListener('click', function(){
+      // INTEGRATION POINT: App Store / Google Play in-app purchase burada tetiklenir.
+      var add = parseInt(p.getAttribute('data-add'), 10);
+      setCredits(credits + add);
+      closeSheet();
+      toast(add + ' kredi eklendi 🎉');
+    });
+  });
+
+  /* Generate */
+  $('genBtn').addEventListener('click', function(){
+    if(busy) return;
+    if(!uploaded){ toast('Önce bir fotoğraf yükle'); return; }
+    if(!selectedStyle){ toast('Bir stil seç'); return; }
+    if(credits < 1){ openSheet(); return; }
+
+    setCredits(credits - 1);
+    generate();
+  });
+
+  function generate(){
+    busy = true;
+    var btn = $('genBtn');
+    btn.disabled = true; btn.textContent = '⏳ Üretiliyor...';
+
+    var res = $('result');
+    res.style.display = 'block';
+    $('resChip').textContent = selectedName;
+    $('resPh').textContent = '⏳';
+    $('resText').innerHTML = '<span style="color:var(--muted)">Avatarın üretiliyor, birkaç saniye...</span>';
+    res.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+    // GERÇEK GÖRSEL ÜRETİMİ — serverless fonksiyonu çağırır
+    generateAvatar(selectedStyle).then(function(data){
+      // preview alanına gerçek görseli koy
+      var preview = res.querySelector('.preview');
+      preview.innerHTML =
+        '<img src="' + data.imageUrl + '" alt="Üretilen avatar" ' +
+        'style="width:100%;height:100%;object-fit:cover;display:block">' +
+        '<span class="stylechip">' + selectedName + '</span>' +
+        '<span style="position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;' +
+        'background:rgba(0,0,0,.55);padding:4px 9px;border-radius:999px;backdrop-filter:blur(8px)">AI ile üretildi</span>';
+      $('resText').textContent = 'Avatarın hazır! Kaydet veya arkadaşlarınla paylaş.';
+      busy = false;
+      btn.disabled = false; btn.textContent = '✨ Avatar üret · 1 kredi';
+      if(credits < 1){ setTimeout(openSheet, 600); }
+    }).catch(function(){
+      $('resPh').textContent = '⚠️';
+      $('resText').textContent = 'Üretim başarısız oldu, tekrar dene.';
+      setCredits(credits + 1); // krediyi iade et
+      busy = false;
+      btn.disabled = false; btn.textContent = '✨ Avatar üret · 1 kredi';
+    });
+  }
+
+  async function generateAvatar(style){
+    // Serverless fonksiyonunu çağırır — API anahtarı orada gizli kalır.
+    // Yerelde test ederken '/api/generate', Vercel'de de aynı yol çalışır.
+    var r = await fetch('/api/generate', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ style: style })
+    });
+    if(!r.ok) throw new Error('Üretim hatası');
+    return await r.json();
+  }
+
+  /* Result actions */
+  $('saveBtn').addEventListener('click', function(){ toast('Galeriye kaydedildi 💾'); });
+  $('shareBtn').addEventListener('click', function(){ toast('Paylaşım açılıyor 📤'); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "AvatarAI",
+  "short_name": "AvatarAI",
+  "description": "AI ile saniyeler içinde avatar üret",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0B0B0F",
+  "theme_color": "#0B0B0F",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Crect width='512' height='512' rx='112' fill='%237C5CFC'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' fill='white'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
